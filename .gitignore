@@ -1,0 +1,34 @@
+## Flutter e Dart
+.dart_tool/
+.packages
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Configurações locais
+.env
+.env.*
+!.env.example
+**/local.properties
+
+# Assinaturas e credenciais privadas
+*.jks
+*.keystore
+key.properties
+*.pem
+*.p12
+*.pfx
+*.secret
+
+# Android
+**/.gradle/
+**/captures/
+
+# iOS
+**/Pods/
+**/.symlinks/
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/.last_build_id
