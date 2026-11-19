@@ -1,4 +1,4 @@
-name: app
+﻿name: app
 description: A new Flutter project.
 publish_to: 'none'
 
@@ -11,18 +11,22 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  shared_preferences: ^2.5.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   config:
     enable-swift-package-manager: false
 
   uses-material-design: true
-  # assets:
+
+  assets:
+    - assets/images/genoves_logo.png
   #  - images/a_dot_burr.jpeg
   #  - images/a_dot_ham.jpeg
   # fonts:
@@ -36,3 +40,12 @@ flutter:
   #       - asset: fonts/TrajanPro.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
+
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: 'assets/images/genoves_logo.png'
+  adaptive_icon_background: '#E8F0FE'
+  adaptive_icon_foreground: 'assets/images/genoves_logo.png'
+

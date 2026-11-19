@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'app/theme/app_theme.dart';
+import 'features/profile/profile_selection_page.dart';
+import 'features/student/student_home_page.dart';
+import 'features/teacher/teacher_home_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,7 +19,11 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  static const String _profileKey = 'genoves_user_profile';
+
   ThemeMode _themeMode = ThemeMode.system;
+  String? _selectedProfile;
+  bool _isLoading = true;
 
   bool get useLightMode {
     switch (_themeMode) {
@@ -27,153 +37,219 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  // This widget is the root of your application.
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedProfile = prefs.getString(_profileKey);
+
+    if (!mounted) return;
+
+    setState(() {
+      _selectedProfile = savedProfile;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _saveProfile(String profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_profileKey, profile);
+
+    if (!mounted) return;
+
+    setState(() {
+      _selectedProfile = profile;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-     title: 'Genoves',
-    theme: ThemeData(
-  useMaterial3: true,
-  brightness: Brightness.light,
-  scaffoldBackgroundColor: const Color(0xFFE8F0FE),
-  colorScheme: ColorScheme.fromSeed(
-    seedColor: const Color(0xFF556B2F),
-    brightness: Brightness.light,
-  ),
-),
-      darkTheme: ThemeData(
-  useMaterial3: true,
-  brightness: Brightness.dark,
-  scaffoldBackgroundColor: const Color(0xFF20251D),
-  colorScheme: ColorScheme.fromSeed(
-    seedColor: const Color(0xFF556B2F),
-    brightness: Brightness.dark,
-  ),
-),
+      title: 'Genovês',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
-      home: MyHomePage(
-        title: 'Material 3 Demo',
-        useLightMode: useLightMode,
-        handleBrightnessChange: (useLightMode) => setState(() {
-          _themeMode = useLightMode ? ThemeMode.light : ThemeMode.dark;
-        }),
-      ),
+      home: _buildHome(),
     );
+  }
+
+  Widget _buildHome() {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_selectedProfile == null) {
+      return ProfileSelectionPage(
+        onProfileSelected: _saveProfile,
+      );
+    }
+
+    if (_selectedProfile == 'student') {
+      return HomePage(
+        useLightMode: useLightMode,
+        onBrightnessChanged: _changeBrightness,
+      );
+    }
+
+    if (_selectedProfile == 'teacher') {
+      return const TeacherHomePage();
+    }
+
+    return ProfileSelectionPage(
+      onProfileSelected: _saveProfile,
+    );
+  }
+
+  void _changeBrightness(bool isLight) {
+    setState(() {
+      _themeMode = isLight ? ThemeMode.light : ThemeMode.dark;
+    });
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({
+class HomePage extends StatelessWidget {
+  const HomePage({
     super.key,
-    required this.title,
-    required this.handleBrightnessChange,
     required this.useLightMode,
+    required this.onBrightnessChanged,
   });
-  final String title;
+
   final bool useLightMode;
-  final void Function(bool useLightMode) handleBrightnessChange;
+  final ValueChanged<bool> onBrightnessChanged;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-class _MyHomePageState extends State<MyHomePage> {
-  @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Genoves',
-          style: TextStyle(
-            color: Color(0xFF556B2F),
-            fontWeight: FontWeight.bold,
-          ),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/genoves_logo.png',
+              width: 42,
+              height: 42,
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'Genovês',
+              style: TextStyle(
+                color: AppTheme.oliveGreen,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
-        actions: <Widget>[
-          _BrightnessButton(
-            handleBrightnessChange: widget.handleBrightnessChange,
+        actions: [
+          IconButton(
+            tooltip: 'Alterar tema',
+            icon: Icon(
+              Theme.of(context).brightness == Brightness.light
+                  ? Icons.dark_mode_outlined
+                  : Icons.light_mode_outlined,
+            ),
+            onPressed: () => onBrightnessChanged(
+              Theme.of(context).brightness != Brightness.light,
+            ),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 30),
-            Text(
-              'Seu conhecimento começa aqui.',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Aprenda, explore e cumpra novas missões.',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 35),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Continue aprendendo',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 25),
+              Image.asset(
+                'assets/images/genoves_logo.png',
+                width: 170,
+                height: 170,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Do primeiro aprendizado ao pensamento crítico',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Seu conhecimento começa aqui.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Aprenda, explore e cumpra novas missões.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 35),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Continue aprendendo',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Retome seus estudos de onde parou.',
-                    ),
-                    const SizedBox(height: 20),
-                    FilledButton(
-                      onPressed: () {},
-                      child: const Text('Acessar estudos'),
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Retome seus estudos de onde parou.',
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const StudentHomePage(),
+                              ),
+                            );
+                          },
+                          child: const Text('Acessar estudos'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const Spacer(),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Icon(Icons.home),
-                Icon(Icons.flag),
-                Icon(Icons.person),
-              ],
-            ),
-            const SizedBox(height: 15),
-          ],
+              const SizedBox(height: 35),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Icon(Icons.home, color: colorScheme.primary),
+                  Icon(Icons.flag, color: colorScheme.primary),
+                  Icon(Icons.person, color: colorScheme.primary),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class _BrightnessButton extends StatelessWidget {
-  const _BrightnessButton({
-    required this.handleBrightnessChange,
-  });
-
-  final Function handleBrightnessChange;
-
-  @override
-  Widget build(BuildContext context) {
-    final isBright = Theme.of(context).brightness == Brightness.light;
-    return Tooltip(
-      preferBelow: true,
-      message: 'Toggle brightness',
-      child: IconButton(
-        icon: isBright
-            ? const Icon(Icons.dark_mode_outlined)
-            : const Icon(Icons.light_mode_outlined),
-        onPressed: () => handleBrightnessChange(!isBright),
       ),
     );
   }
